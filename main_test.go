@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	// "fmt"
@@ -59,7 +60,7 @@ func TestComplex(t *testing.T) {
 	}
 
 	jsonRaw, _ := json.Marshal(expected)
-	// fmt.Println(string(jsonRaw))
+	fmt.Println(string(jsonRaw))
 
 	var tmpData interface{}
 	json.Unmarshal(jsonRaw, &tmpData)
