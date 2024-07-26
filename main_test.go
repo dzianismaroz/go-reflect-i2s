@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 	// "fmt"
@@ -60,7 +59,7 @@ func TestComplex(t *testing.T) {
 	}
 
 	jsonRaw, _ := json.Marshal(expected)
-	fmt.Println(string(jsonRaw))
+	// fmt.Println(string(jsonRaw))
 
 	var tmpData interface{}
 	json.Unmarshal(jsonRaw, &tmpData)
@@ -105,42 +104,42 @@ type ErrorCase struct {
 	JsonData string
 }
 
-// аккуратно в этом тесте
-// писать надо именно в то что пришло
+// careful in this test
+// you need to write exactly what came
 func TestErrors(t *testing.T) {
 	cases := []ErrorCase{
-		// "Active":"DA" - string вместо bool
+		// "Active":"DA" - string instead of bool
 		ErrorCase{
 			&Simple{},
 			`{"ID":42,"Username":"rvasily","Active":"DA"}`,
 		},
-		// "ID":"42" - string вместо int
+		// "ID":"42" - string instead of int
 		ErrorCase{
 			&Simple{},
 			`{"ID":"42","Username":"rvasily","Active":true}`,
 		},
-		// "Username":100500 - int вместо string
+		// "Username":100500 - int instead of string
 		ErrorCase{
 			&Simple{},
 			`{"ID":42,"Username":100500,"Active":true}`,
 		},
-		// "ManySimple":{} - ждём слайс, получаем структуру
+		// "ManySimple":{} - wait for the slice, get the structure
 		ErrorCase{
 			&Complex{},
 			`{"SubSimple":{"ID":42,"Username":"rvasily","Active":true},"ManySimple":{}}`,
 		},
-		// "SubSimple":true - ждём структуру, получаем bool
+		// "SubSimple":true - wait for the structure, get a bool
 		ErrorCase{
 			&Complex{},
 			`{"SubSimple":true,"ManySimple":[{"ID":42,"Username":"rvasily","Active":true}]}`,
 		},
-		// ожидаем структуру - пришел массив
+		// expecting a structure - an array has arrived
 		ErrorCase{
 			&Simple{},
 			`[{"ID":42,"Username":"rvasily","Active":true}]`,
 		},
-		// Simple{} ( без амперсанта, т.е. структура, а не указатель на структуру )
-		// пришел не ссылочный тип - мы не сможем вернуть результат
+		// Simple{} (without an ampersand, i.e. a structure, not a pointer to a structure)
+		// not a reference type arrived - we will not be able to return the result
 		ErrorCase{
 			Simple{},
 			`{"ID":42,"Username":"rvasily","Active":true}`,

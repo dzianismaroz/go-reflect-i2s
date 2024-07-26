@@ -1,22 +1,36 @@
-Функция interfaсe2struct
+#### solution result:
+```
+go test -v
+=== RUN   TestSimple
+--- PASS: TestSimple (0.00s)
+=== RUN   TestComplex
+--- PASS: TestComplex (0.00s)
+=== RUN   TestSlice
+--- PASS: TestSlice (0.00s)
+=== RUN   TestErrors
+--- PASS: TestErrors (0.00s)
+PASS
+ok      stepik/8/99_hw/i2s      0.001s
+```
+interface2struct function
 
-i2s - interface to struct. Функция, которая заполняет значения структуры из map[string]interface{} и подобных - того что получается, если распаковать json в interface{} (см. пример в json/dynamic.go)
+i2s - interface to struct. A function that fills the values ​​of the structure from map[string]interface{} and similar - what you get if you unpack json into interface{} (see example in json/dynamic.go)
 
-Задание на работу с рефлексией.
+Reflection task.
 
-Не смотря на некую мудрённость на первый взгляд - рефлексия применяется очень часто. Понимать как она работает и как вам с ней работать очень пригодится в дальнейшем.
+Despite some sophistication at first glance, reflection is used very often. Understanding how it works and how you can work with it will be very useful in the future.
 
-Реализация занимает 80-100 строк кода
+Implementation takes 80-100 lines of code
 
-Из типов данных достаточно предусмотреть те, что есть в тесте.
+Of the data types, it is enough to provide those that are in the test.
 
-Запускать go test -v
+Run go test -v
 
-Код писать в файле i2s.go
+Write the code in the i2s.go file
 
-Подсказки:
+Tips:
 
-* Все нужные вам функции есть в пакете reflect - https://golang.org/pkg/reflect/ - внимательно читайте документацию
-* json распаковывает int во float. Это указано в документации, не бага. В данном случае будет корректно приводить к инту, если нам встретился флоат
-* Проверяйте всегда что вам приходит на вход. И смотрите, что вы передаёте в функцию (да, рекурсия тут себя хорошо показывает) не reflect.Value, а именно оригинальные данные, до который вы доковырялись через нужные методы рефлекта
-* Если вы в функции используете какие-то имена структур, которые встречаются в стесте - это не правильно
+* All the functions you need are in the reflect package - https://golang.org/pkg/reflect/ - read the documentation carefully
+* json unpacks int into float. This is stated in the documentation, not a bug. In this case, it will be correct to result in int if we encounter a float
+* Always check what you receive at the entrance. And look at what you pass to the function (yes, recursion shows itself well here) not reflect.Value, but the original data that you got to through the necessary reflect methods
+* If you use some structure names in a function that appear in the test, this is not correct

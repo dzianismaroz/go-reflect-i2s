@@ -6,14 +6,13 @@ import (
 	"reflect"
 )
 
-func validate(in, out interface{}) error {
-	outType := reflect.TypeOf(out)
-	if outType.Kind() != reflect.Pointer {
-		return errors.New("target argument is unmodifiable")
-	}
+var UnmodifiableErr = errors.New("unmodifiable")
 
-	if reflect.TypeOf(in).Kind() != reflect.Map {
-		return errors.New("source argument is not a map")
+// if target is not a pointer / slice -> impossible to modify it.
+func validate(out interface{}) error {
+	kind := reflect.ValueOf(out).Kind()
+	if kind != reflect.Pointer && kind != reflect.Slice {
+		return errors.New("target argument is unmodifiable")
 	}
 	return nil
 }
@@ -23,72 +22,70 @@ func validate(in, out interface{}) error {
 // data - map[string]interface{}
 // out - struct{}
 func i2s(data interface{}, out interface{}) error {
-	// VALIDATE
-	if validErr := validate(data, out); validErr != nil {
+	// VALIDATE : is assigneable
+	if validErr := validate(out); validErr != nil {
 		return validErr
 	}
-	dataVal := reflect.ValueOf(data)
-	outVal := reflect.ValueOf(out).Elem() // origignal strucy behing the pointer.
-
-	rawHolder := map[string]interface{}{}
-
-	for _, e := range dataVal.MapKeys() {
-		key := e.String()
-		rawHolder[key] = dataVal.MapIndex(e).Interface()
-
+	outVal := reflect.ValueOf(out).Elem()
+	if err := extract(data, outVal); err != nil {
+		return err
 	}
-	fmt.Println("raw Holder :", rawHolder)
-
-	for i := 0; i < outVal.NumField(); i++ {
-		f := outVal.FieldByIndex([]int{i})
-		targetName := outVal.Type().Field(i).Name
-		fmt.Print("target name:", targetName, " and val: ")
-		if !f.IsValid() {
-			return fmt.Errorf("field %s is invalid", targetName)
-		}
-		if !f.CanSet() {
-			return fmt.Errorf("field %s is not modifiable", targetName)
-		}
-		val, exists := rawHolder[targetName]
-		if !exists {
-			continue
-		}
-		fmt.Println(val)
-		switch f.Kind() {
-		case reflect.String:
-			switch val.(type) {
-			case string: //is ok
-			default:
-				return errors.New("type mismatch")
-			}
-			f.SetString(val.(string))
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			switch val.(type) {
-			case float64: //is ok
-			default:
-				return errors.New("type mismatch")
-			}
-			f.SetInt(int64(val.(float64)))
-		case reflect.Float32, reflect.Float64:
-			switch val.(type) {
-			case float64: //is ok
-			default:
-				return errors.New("type mismatch")
-			}
-			f.SetFloat(val.(float64))
-		case reflect.Bool:
-			switch val.(type) {
-			case bool: //is ok
-			default:
-				return errors.New("type mismatch")
-			}
-			f.SetBool(val.(bool))
-		}
-	}
-
 	return nil
 }
 
-func extractFrom(holder map[string]interface{}) interface{} {
+func extract(from interface{}, to reflect.Value) (genErr error) {
+	if from == nil {
+		return nil // do nothing
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			genErr = fmt.Errorf("%s", r)
+		}
+	}()
 
+	fromVal, toVal := reflect.ValueOf(from), to
+
+	if !toVal.CanSet() {
+		return UnmodifiableErr
+	}
+	switch toVal.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		toVal.SetInt(int64(fromVal.Float()))
+	case reflect.String:
+		if toVal.Kind() != fromVal.Kind() {
+			return errors.New("wrong type")
+		}
+		toVal.SetString(fromVal.String())
+	case reflect.Bool:
+		toVal.SetBool(fromVal.Bool())
+	case reflect.Float32, reflect.Float64:
+		toVal.SetFloat(fromVal.Float())
+	case reflect.Slice:
+		rawHolder := from.([]interface{})
+		newSlice := reflect.MakeSlice(reflect.SliceOf(to.Type().Elem()), len(rawHolder), cap(rawHolder))
+		for i := 0; i < len(rawHolder); i++ {
+			if err := extract(rawHolder[i], newSlice.Index(i)); err != nil {
+				return err
+			}
+		}
+		to.Set(newSlice)
+	case reflect.Struct:
+		for i := 0; i < to.NumField(); i++ {
+			structField := to.FieldByIndex([]int{i})
+			targetName := to.Type().Field(i).Name // resolve struct field name
+			rawHolder := from.(map[string]interface{})
+			val, exists := rawHolder[targetName]
+			if !exists {
+				continue
+			}
+			if err := extract(val, structField); err != nil {
+				return err
+			}
+		}
+	case reflect.Pointer:
+		return extract(fromVal, to.Elem())
+	default:
+		return fmt.Errorf("unsupported type: %s", toVal.Type().Name())
+	}
+	return nil
 }
