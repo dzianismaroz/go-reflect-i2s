@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-var UnmodifiableErr = errors.New("unmodifiable")
+var UnmodifiableErr = errors.New("unmodifiable") // if not reference value (copy)
 
 // if target is not a pointer / slice -> impossible to modify it.
 func validate(out interface{}) error {
@@ -33,8 +33,8 @@ func i2s(data interface{}, out interface{}) error {
 	return nil
 }
 
-func extract(from interface{}, to reflect.Value) (genErr error) {
-	if from == nil {
+func extract(rawData interface{}, target reflect.Value) (genErr error) {
+	if rawData == nil {
 		return nil // do nothing
 	}
 	defer func() {
@@ -43,7 +43,7 @@ func extract(from interface{}, to reflect.Value) (genErr error) {
 		}
 	}()
 
-	fromVal, toVal := reflect.ValueOf(from), to
+	fromVal, toVal := reflect.ValueOf(rawData), target
 
 	if !toVal.CanSet() {
 		return UnmodifiableErr
@@ -61,20 +61,20 @@ func extract(from interface{}, to reflect.Value) (genErr error) {
 	case reflect.Float32, reflect.Float64:
 		toVal.SetFloat(fromVal.Float())
 	case reflect.Slice:
-		rawHolder := from.([]interface{})
-		newSlice := reflect.MakeSlice(reflect.SliceOf(to.Type().Elem()), len(rawHolder), cap(rawHolder))
+		rawHolder := rawData.([]interface{})
+		newSlice := reflect.MakeSlice(reflect.SliceOf(target.Type().Elem()), len(rawHolder), cap(rawHolder))
 		for i := 0; i < len(rawHolder); i++ {
 			if err := extract(rawHolder[i], newSlice.Index(i)); err != nil {
 				return err
 			}
 		}
-		to.Set(newSlice)
+		target.Set(newSlice)
 	case reflect.Struct:
-		for i := 0; i < to.NumField(); i++ {
-			structField := to.FieldByIndex([]int{i})
-			targetName := to.Type().Field(i).Name // resolve struct field name
-			rawHolder := from.(map[string]interface{})
-			val, exists := rawHolder[targetName]
+		for i := 0; i < target.NumField(); i++ {
+			structField := target.FieldByIndex([]int{i})
+			targetFieldName := target.Type().Field(i).Name // resolve struct field name
+			rawHolder := rawData.(map[string]interface{})
+			val, exists := rawHolder[targetFieldName]
 			if !exists {
 				continue
 			}
@@ -83,7 +83,7 @@ func extract(from interface{}, to reflect.Value) (genErr error) {
 			}
 		}
 	case reflect.Pointer:
-		return extract(fromVal, to.Elem())
+		return extract(fromVal, target.Elem())
 	default:
 		return fmt.Errorf("unsupported type: %s", toVal.Type().Name())
 	}
