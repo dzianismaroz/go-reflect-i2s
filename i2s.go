@@ -17,13 +17,6 @@ func validate(out interface{}) error {
 	return nil
 }
 
-func getIfByPointer(val reflect.Value) reflect.Value {
-	if val.Kind() != reflect.Pointer {
-		return val
-	}
-	return getIfByPointer(val.Elem())
-}
-
 // Function to fill struct fields with values of map.
 // @params :
 // data - map[string]interface{}
