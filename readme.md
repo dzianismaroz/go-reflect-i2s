@@ -30,6 +30,8 @@ Write the code in the i2s.go file
 
 Tips:
 
+
+
 * All the functions you need are in the reflect package - https://golang.org/pkg/reflect/ - read the documentation carefully
 * json unpacks int into float. This is stated in the documentation, not a bug. In this case, it will be correct to result in int if we encounter a float
 * Always check what you receive at the entrance. And look at what you pass to the function (yes, recursion shows itself well here) not reflect.Value, but the original data that you got to through the necessary reflect methods
