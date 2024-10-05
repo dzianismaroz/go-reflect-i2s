@@ -1,4 +1,4 @@
 FROM scratch
 
 
-ADD ./nothing #remove this
+ADD ./nothing 
